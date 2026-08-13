@@ -65,6 +65,7 @@ class SessionViewModel @Inject constructor(
     snippetDao: SnippetDao,
     private val localKeys: LocalKeyManager,
     private val prefs: SharedPreferences,
+    val openVpn: com.jacklugano.termvault.vpn.OpenVpnController,
 ) : ViewModel() {
 
     val tabs: StateFlow<List<SshTerminalTab>> = manager.tabs

@@ -42,6 +42,8 @@ android {
 
     buildFeatures {
         compose = true
+        // API remota di OpenVPN for Android (app/src/main/aidl/de/blinkt/openvpn/api)
+        aidl = true
     }
 
     packaging {

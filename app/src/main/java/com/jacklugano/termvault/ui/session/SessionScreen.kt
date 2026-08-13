@@ -102,6 +102,28 @@ fun SessionScreen(
         }
     }
 
+    // Launcher per i consensi una-tantum di OpenVPN (permesso API + VPN di sistema).
+    var vpnConsentDeferred by remember {
+        mutableStateOf<kotlinx.coroutines.CompletableDeferred<Boolean>?>(null)
+    }
+    val vpnConsentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        vpnConsentDeferred?.complete(result.resultCode == Activity.RESULT_OK)
+        vpnConsentDeferred = null
+    }
+    val launchVpnConsent: suspend (Intent) -> Boolean = { intent ->
+        val deferred = kotlinx.coroutines.CompletableDeferred<Boolean>()
+        vpnConsentDeferred = deferred
+        try {
+            vpnConsentLauncher.launch(intent)
+            deferred.await()
+        } catch (_: ActivityNotFoundException) {
+            vpnConsentDeferred = null
+            false
+        }
+    }
+
     // Launcher per la query credenziali verso Keepass2Android.
     val kp2aLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -135,23 +157,43 @@ fun SessionScreen(
             }
 
             is ConnectPrompt.StartVpn -> {
-                // API pubblica di "OpenVPN for Android" (de.blinkt.openvpn):
-                // alla prima chiamata l'app chiede all'utente di autorizzare TermVault.
-                try {
-                    screenContext.startActivity(
-                        Intent()
-                            .setClassName("de.blinkt.openvpn", "de.blinkt.openvpn.api.ConnectVPN")
-                            .putExtra("de.blinkt.openvpn.api.profileName", p.profile)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                    p.deferred.complete(true)
-                } catch (_: ActivityNotFoundException) {
-                    viewModel.reportKp2aError(
-                        "\"OpenVPN for Android\" non è installata. Serve quell'app " +
-                            "(de.blinkt.openvpn), non OpenVPN Connect, per l'avvio " +
-                            "automatico del profilo."
-                    )
-                    p.deferred.complete(false)
+                // API AIDL di "OpenVPN for Android": il profilo parte in background
+                // e TermVault resta in primo piano. Le uniche UI possibili sono i
+                // consensi una-tantum, lanciati dal nostro task (launchVpnConsent).
+                when (val outcome = viewModel.openVpn.startProfile(p.profile) { intent ->
+                    launchVpnConsent(intent)
+                }) {
+                    is com.jacklugano.termvault.vpn.VpnStartOutcome.Started ->
+                        p.deferred.complete(true)
+
+                    is com.jacklugano.termvault.vpn.VpnStartOutcome.NotAvailable -> {
+                        // Fallback: vecchio intent visibile (porta OpenVPN davanti,
+                        // ma almeno funziona con versioni datate dell'app).
+                        try {
+                            screenContext.startActivity(
+                                Intent()
+                                    .setClassName(
+                                        "de.blinkt.openvpn",
+                                        "de.blinkt.openvpn.api.ConnectVPN",
+                                    )
+                                    .putExtra("de.blinkt.openvpn.api.profileName", p.profile)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                            p.deferred.complete(true)
+                        } catch (_: ActivityNotFoundException) {
+                            viewModel.reportKp2aError(
+                                "\"OpenVPN for Android\" non è installata. Serve quell'app " +
+                                    "(de.blinkt.openvpn), non OpenVPN Connect, per l'avvio " +
+                                    "automatico del profilo."
+                            )
+                            p.deferred.complete(false)
+                        }
+                    }
+
+                    is com.jacklugano.termvault.vpn.VpnStartOutcome.Error -> {
+                        viewModel.reportKp2aError(outcome.message)
+                        p.deferred.complete(false)
+                    }
                 }
             }
 
