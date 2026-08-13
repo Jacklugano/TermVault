@@ -1,0 +1,24 @@
+# Build
+*.iml
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio / IntelliJ
+.idea/
+*.hprof
+local.properties
+
+# Segreti / firma (MAI committare)
+keystore.properties
+*.keystore
+*.jks
+*.p12
+release/
+
+# OS
+.DS_Store
+Thumbs.db

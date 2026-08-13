@@ -1,0 +1,12 @@
+# Normalizza i fine-riga a LF nel repo
+* text=auto eol=lf
+
+# Script e batch mantengono il loro fine-riga nativo
+*.bat text eol=crlf
+gradlew text eol=lf
+
+# Binari
+*.jar binary
+*.png binary
+*.jpg binary
+*.keystore binary

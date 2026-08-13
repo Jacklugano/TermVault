@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TermVault</string>
+
+    <!-- Richiesti dal plugin SDK di Keepass2Android: mostrati nella lista plugin di KP2A -->
+    <string name="kp2aplugin_title">TermVault SSH</string>
+    <string name="kp2aplugin_shortdesc">Client SSH: recupera credenziali e chiavi private dalle entry di Keepass2Android</string>
+    <string name="kp2aplugin_author">Giacomo</string>
+</resources>

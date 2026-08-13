@@ -1,0 +1,34 @@
+TermVault
+Copyright (C) 2026 Giacomo (github.com/Jacklugano)
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See the LICENSE file for the full text.
+
+This product includes third-party software:
+
+- Keepass2AndroidPluginSDK2
+  Copyright (C) Philipp Crocoll
+  Licensed under the GNU General Public License v3.0.
+  Source: https://github.com/PhilippC/keepass2android
+  (module :kp2a-sdk, sources under keepass2android.pluginsdk, unmodified)
+
+- Termux terminal-emulator and terminal-view (v0.118.3)
+  Copyright (C) Termux
+  Licensed under the Apache License, Version 2.0.
+  Source: https://github.com/termux/termux-app
+  (modules :terminal-emulator and :terminal-view; terminal-emulator carries a
+   minimal "stream mode" patch, marked "PATCH TermVault" in TerminalSession.java)
+
+- sshj — ssh, scp and sftp for java
+  Licensed under the Apache License, Version 2.0.
+  Source: https://github.com/hierynomus/sshj
+
+- Bouncy Castle Cryptography APIs
+  Copyright (C) The Legion of the Bouncy Castle Inc.
+  Licensed under an MIT-style license.
+  Source: https://www.bouncycastle.org/
+
+TermVault is an independent project and is not affiliated with, endorsed by, or
+sponsored by Termux or Keepass2Android.

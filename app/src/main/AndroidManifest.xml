@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- specialUse: connectedDevice richiederebbe permessi Bluetooth/UWB che
+         non abbiamo; il sotto-tipo dichiarato sotto documenta l'uso reale. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:name=".TermVaultApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TermVault"
+        tools:targetApi="35">
+
+        <!-- launchMode standard (NON singleTask): KP2A legge getCallingActivity()
+             per identificare il plugin chiamante; con singleTask può risultare
+             null e la query credenziali fallisce in silenzio. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|density|smallestScreenSize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".service.SshSessionService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Mantiene vive le connessioni SSH interattive mentre l'app è in background" />
+        </service>
+
+        <!-- Protocollo plugin Keepass2Android: exported perché è KP2A a inviare
+             i broadcast di richiesta/consegna/revoca dell'accesso. -->
+        <receiver
+            android:name=".kp2a.Kp2aAccessReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="keepass2android.ACTION_TRIGGER_REQUEST_ACCESS" />
+                <action android:name="keepass2android.ACTION_RECEIVE_ACCESS" />
+                <action android:name="keepass2android.ACTION_REVOKE_ACCESS" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+
+</manifest>
