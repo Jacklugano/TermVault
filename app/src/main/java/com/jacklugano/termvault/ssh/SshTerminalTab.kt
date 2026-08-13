@@ -92,6 +92,7 @@ class SshTerminalTab(
     @Volatile private var userClosed = false
     private val activeForwarders = mutableMapOf<Long, AutoCloseable>()
     private val forwarderSockets = mutableMapOf<Long, ServerSocket>()
+    private var sftpClient: net.schmizz.sshj.sftp.SFTPClient? = null
 
     companion object {
         private val NEXT_ID = AtomicLong(0)
@@ -335,6 +336,17 @@ class SshTerminalTab(
         terminalSession.write(text)
     }
 
+    /**
+     * Client SFTP pigro sulla connessione corrente. Da usare SOLO da thread IO;
+     * lancia IOException se la sessione non è connessa.
+     */
+    @Synchronized
+    fun sftp(): net.schmizz.sshj.sftp.SFTPClient {
+        val ssh = client ?: throw IOException("Sessione non connessa")
+        sftpClient?.let { return it }
+        return ssh.newSFTPClient().also { sftpClient = it }
+    }
+
     // ---- Port forwarding ----------------------------------------------------
 
     fun setForwardConfigs(configs: List<PortForwardEntity>) {
@@ -425,6 +437,10 @@ class SshTerminalTab(
     }
 
     private fun teardownConnection() {
+        synchronized(this) {
+            runCatching { sftpClient?.close() }
+            sftpClient = null
+        }
         synchronized(activeForwarders) {
             activeForwarders.values.forEach { runCatching { it.close() } }
             activeForwarders.clear()

@@ -101,6 +101,10 @@ dell'editor host precompila una entry (via `getAddEntryIntent`) con
 - Port forwarding locale (`-L`) e remoto (`-R`) per host, start/stop dal
   pannello ⇄ della sessione
 - Snippet inviabili con un tap dal bottom sheet della sessione
+- Browser file SFTP (icona 📁 nella sessione): navigazione directory remote,
+  download col selettore di sistema, upload nella directory corrente, con
+  barra di avanzamento — sulla stessa connessione (credenziali KP2A e jump
+  host inclusi)
 - known_hosts persistente: prompt con fingerprint SHA-256 alla prima
   connessione, **allarme evidente** su mismatch (la sostituzione richiede
   conferma esplicita)

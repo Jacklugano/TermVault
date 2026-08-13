@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -85,6 +86,7 @@ fun SessionScreen(
     var showSearch by rememberSaveable { mutableStateOf(false) }
     var showPubKey by rememberSaveable { mutableStateOf(false) }
     var showForwards by rememberSaveable { mutableStateOf(false) }
+    var showSftp by rememberSaveable { mutableStateOf(false) }
 
     val activeTab = tabs.firstOrNull { it.id == activeTabId }
 
@@ -159,6 +161,9 @@ fun SessionScreen(
                         Icon(Icons.AutoMirrored.Filled.Label, contentDescription = "Snippet")
                     }
                     if (activeTab != null) {
+                        IconButton(onClick = { showSftp = true }) {
+                            Icon(Icons.Default.Folder, contentDescription = "File (SFTP)")
+                        }
                         IconButton(onClick = { showForwards = true }) {
                             Icon(Icons.Default.SwapHoriz, contentDescription = "Port forwarding")
                         }
@@ -339,6 +344,10 @@ fun SessionScreen(
                 }
             }
         }
+    }
+
+    if (showSftp && activeTab != null) {
+        SftpBrowserSheet(tab = activeTab, onClose = { showSftp = false })
     }
 
     if (showForwards && activeTab != null) {
