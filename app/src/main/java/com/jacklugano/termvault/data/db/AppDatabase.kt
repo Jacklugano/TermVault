@@ -26,7 +26,7 @@ class Converters {
         KnownHostEntity::class,
         PortForwardEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -35,4 +35,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun snippetDao(): SnippetDao
     abstract fun knownHostDao(): KnownHostDao
     abstract fun portForwardDao(): PortForwardDao
+
+    companion object {
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE hosts ADD COLUMN openVpnProfile TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+    }
 }

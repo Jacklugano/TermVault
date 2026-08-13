@@ -46,6 +46,15 @@ sealed interface ConnectPrompt {
         val hostName: String,
         override val deferred: CompletableDeferred<Any?>,
     ) : ConnectPrompt
+
+    /**
+     * Chiedi a "OpenVPN for Android" di attivare [profile]. La UI lancia
+     * l'intent e completa con true (lanciato) o false (app assente).
+     */
+    data class StartVpn(
+        val profile: String,
+        override val deferred: CompletableDeferred<Any?>,
+    ) : ConnectPrompt
 }
 
 @HiltViewModel
@@ -71,6 +80,10 @@ class SessionViewModel @Inject constructor(
     private val _connectError = MutableStateFlow<String?>(null)
     val connectError: StateFlow<String?> = _connectError
 
+    /** Messaggio di avanzamento pre-connessione (es. attivazione VPN). */
+    private val _connectStatus = MutableStateFlow<String?>(null)
+    val connectStatus: StateFlow<String?> = _connectStatus
+
     private val _fontSizeSp = MutableStateFlow(prefs.getInt(PREF_FONT_SIZE, 14))
     val fontSizeSp: StateFlow<Int> = _fontSizeSp
 
@@ -94,6 +107,8 @@ class SessionViewModel @Inject constructor(
                     return@launch
                 }
                 val jumpHost = host.jumpHostId?.let { hostDao.getById(it) }
+
+                if (!ensureVpn(host, jumpHost)) return@launch
 
                 val jumpCreds = jumpHost?.let { resolveCredentials(it) }
                 if (jumpHost != null && jumpCreds == null) return@launch // annullato
@@ -142,6 +157,56 @@ class SessionViewModel @Inject constructor(
                     passphrase = passphrase,
                     keyProvider = localKeys.keyProvider(alias, passphrase),
                 )
+            }
+        }
+
+    /**
+     * Se l'host (o il suo jump host) richiede una VPN OpenVPN, la attiva e
+     * attende che la destinazione da raggiungere per prima risponda in TCP.
+     * Ritorna false se l'utente/l'ambiente non permette di procedere.
+     */
+    private suspend fun ensureVpn(host: HostEntity, jumpHost: HostEntity?): Boolean {
+        val profile = host.openVpnProfile.ifBlank { jumpHost?.openVpnProfile.orEmpty() }
+        if (profile.isBlank()) return true
+
+        // Il primo hop è il jump host se presente, altrimenti l'host stesso.
+        val probeHost = jumpHost ?: host
+
+        if (isReachable(probeHost, 2_500)) return true // VPN già attiva
+
+        val deferred = CompletableDeferred<Any?>()
+        _prompt.value = ConnectPrompt.StartVpn(profile, deferred)
+        val launched = deferred.await() as? Boolean ?: false
+        _prompt.value = null
+        if (!launched) return false
+
+        val startedAt = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startedAt < VPN_WAIT_MS) {
+            val elapsed = (System.currentTimeMillis() - startedAt) / 1000
+            _connectStatus.value =
+                "VPN \"$profile\" in attivazione — attendo ${probeHost.hostname}… (${elapsed}s)"
+            if (isReachable(probeHost, 3_000)) {
+                _connectStatus.value = null
+                return true
+            }
+            kotlinx.coroutines.delay(1_500)
+        }
+        _connectStatus.value = null
+        _connectError.value =
+            "${probeHost.hostname} non raggiungibile dopo ${VPN_WAIT_MS / 1000}s: " +
+                "VPN non attiva o nome profilo errato"
+        return false
+    }
+
+    private suspend fun isReachable(host: HostEntity, timeoutMs: Int): Boolean =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                java.net.Socket().use {
+                    it.connect(java.net.InetSocketAddress(host.hostname, host.port), timeoutMs)
+                }
+                true
+            } catch (_: Exception) {
+                false
             }
         }
 
@@ -200,5 +265,6 @@ class SessionViewModel @Inject constructor(
 
     companion object {
         private const val PREF_FONT_SIZE = "terminal_font_size_sp"
+        private const val VPN_WAIT_MS = 60_000L
     }
 }

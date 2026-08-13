@@ -166,6 +166,21 @@ fun HostEditScreen(
                 onSelect = { id -> viewModel.update { it.copy(jumpHostId = id) } },
             )
 
+            OutlinedTextField(
+                value = state.openVpnProfile,
+                onValueChange = { v -> viewModel.update { it.copy(openVpnProfile = v) } },
+                label = { Text("Profilo OpenVPN (opzionale)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = {
+                    Text(
+                        "Nome esatto del profilo in \"OpenVPN for Android\": viene " +
+                            "attivato prima della connessione. Richiede quell'app " +
+                            "(non OpenVPN Connect)."
+                    )
+                },
+            )
+
             Text("Autenticazione", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(

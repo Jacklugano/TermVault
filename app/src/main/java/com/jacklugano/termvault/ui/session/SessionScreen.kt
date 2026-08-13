@@ -77,6 +77,8 @@ fun SessionScreen(
     @Suppress("UNUSED_VARIABLE") val tabsVersion by viewModel.tabsVersion.collectAsStateWithLifecycle()
     val prompt by viewModel.prompt.collectAsStateWithLifecycle()
     val connectError by viewModel.connectError.collectAsStateWithLifecycle()
+    val connectStatus by viewModel.connectStatus.collectAsStateWithLifecycle()
+    val screenContext = androidx.compose.ui.platform.LocalContext.current
     val fontSizeSp by viewModel.fontSizeSp.collectAsStateWithLifecycle()
     val snippets by viewModel.snippets.collectAsStateWithLifecycle()
 
@@ -119,17 +121,41 @@ fun SessionScreen(
     }
 
     LaunchedEffect(prompt) {
-        val p = prompt
-        if (p is ConnectPrompt.Kp2aQuery) {
-            try {
-                kp2aLauncher.launch(Kp2aControl.getQueryEntryIntent(p.query))
-            } catch (_: ActivityNotFoundException) {
-                viewModel.reportKp2aError(
-                    "Keepass2Android non è installato: installa l'app o cambia " +
-                        "la modalità di autenticazione dell'host."
-                )
-                p.deferred.complete(null)
+        when (val p = prompt) {
+            is ConnectPrompt.Kp2aQuery -> {
+                try {
+                    kp2aLauncher.launch(Kp2aControl.getQueryEntryIntent(p.query))
+                } catch (_: ActivityNotFoundException) {
+                    viewModel.reportKp2aError(
+                        "Keepass2Android non è installato: installa l'app o cambia " +
+                            "la modalità di autenticazione dell'host."
+                    )
+                    p.deferred.complete(null)
+                }
             }
+
+            is ConnectPrompt.StartVpn -> {
+                // API pubblica di "OpenVPN for Android" (de.blinkt.openvpn):
+                // alla prima chiamata l'app chiede all'utente di autorizzare TermVault.
+                try {
+                    screenContext.startActivity(
+                        Intent()
+                            .setClassName("de.blinkt.openvpn", "de.blinkt.openvpn.api.ConnectVPN")
+                            .putExtra("de.blinkt.openvpn.api.profileName", p.profile)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                    p.deferred.complete(true)
+                } catch (_: ActivityNotFoundException) {
+                    viewModel.reportKp2aError(
+                        "\"OpenVPN for Android\" non è installata. Serve quell'app " +
+                            "(de.blinkt.openvpn), non OpenVPN Connect, per l'avvio " +
+                            "automatico del profilo."
+                    )
+                    p.deferred.complete(false)
+                }
+            }
+
+            else -> Unit
         }
     }
 
@@ -234,9 +260,29 @@ fun SessionScreen(
                 }
             }
 
+            connectStatus?.let { status ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.tertiaryContainer)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Text(
+                        "  $status",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
             if (activeTab == null) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("Nessuna sessione attiva")
+                    Text(if (connectStatus != null) "" else "Nessuna sessione attiva")
                 }
             } else {
                 key(activeTab.id) {

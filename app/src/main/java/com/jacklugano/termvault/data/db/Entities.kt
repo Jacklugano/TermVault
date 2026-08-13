@@ -47,6 +47,11 @@ data class HostEntity(
     val localKeyAlias: String? = null,
     /** Se true, con LOCAL_KEY la passphrase viene chiesta a KP2A tramite kp2aQuery. */
     val kp2aForPassphrase: Boolean = false,
+    /**
+     * Nome del profilo di "OpenVPN for Android" (de.blinkt.openvpn) da attivare
+     * prima di connettersi. Vuoto = nessuna VPN.
+     */
+    val openVpnProfile: String = "",
     val createdAt: Long = System.currentTimeMillis(),
 ) {
     companion object {

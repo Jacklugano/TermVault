@@ -30,6 +30,7 @@ data class HostEditState(
     val kp2aQuery: String = "",
     val kp2aForPassphrase: Boolean = false,
     val localKeyAlias: String? = null,
+    val openVpnProfile: String = "",
     val loaded: Boolean = false,
 )
 
@@ -69,6 +70,7 @@ class HostEditViewModel @Inject constructor(
                     kp2aQuery = existing.kp2aQuery,
                     kp2aForPassphrase = existing.kp2aForPassphrase,
                     localKeyAlias = existing.localKeyAlias,
+                    openVpnProfile = existing.openVpnProfile,
                     loaded = true,
                 )
             } else {
@@ -106,6 +108,7 @@ class HostEditViewModel @Inject constructor(
                     kp2aQuery = s.kp2aQuery.trim(),
                     kp2aForPassphrase = s.kp2aForPassphrase,
                     localKeyAlias = s.localKeyAlias,
+                    openVpnProfile = s.openVpnProfile.trim(),
                 )
             )
             onSaved()
